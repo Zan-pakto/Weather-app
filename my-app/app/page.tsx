@@ -1,51 +1,103 @@
 "use client";
-import { useState } from "react";
+
+import { useEffect, useState } from "react";
+import styles from "./page.module.css";
+
 export default function Home() {
+  const [ip, setIp] = useState("");
   const [city, setCity] = useState("");
   const [weather, setWeather] = useState(null);
-  const [error, setError] = useState(null);
 
-  const fetchWeather = async () => {
-    if (!city) return;
-    setError(null);
+  const fetchLocation = async () => {
+    try {
+      const response = await fetch("https://api64.ipify.org?format=json");
+      const data = await response.json();
+      setIp(data.ip);
+    } catch (error) {
+      console.error("Error fetching IP:", error);
+    }
+  };
+
+  const fetchIpCity = async () => {
+    try {
+      const response = await fetch(
+        `https://ipinfo.io/json?token=b28527eb6fc130`
+      );
+      const data = await response.json();
+      setCity(data.city);
+      fetchWeather(data.city);
+    } catch (error) {
+      console.error("Error fetching city:", error);
+    }
+  };
+
+  const fetchWeather = async (cityName) => {
+    if (!cityName) return;
+
     try {
       const res = await fetch(
-        `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=f140528a7044af55706aae100072fde4`
+        `https://api.openweathermap.org/data/2.5/weather?q=${cityName}&units=metric&appid=f140528a7044af55706aae100072fde4`
       );
       if (!res.ok) throw new Error("City not found");
       const data = await res.json();
       setWeather(data);
     } catch (err) {
-      setError(err.message);
+      console.error("Weather fetch error:", err);
       setWeather(null);
     }
   };
 
+  useEffect(() => {
+    fetchLocation();
+  }, []);
+
+  useEffect(() => {
+    if (ip) fetchIpCity();
+  }, [ip]);
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-blue-100 p-4">
-      <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-md text-center">
-        <h1 className="text-2xl font-bold mb-4">Weather App</h1>
+    <div
+      className={`min-h-screen flex flex-col p-6 pt-10 items-center ${styles.animatedBackground}`}
+    >
+      <div className="bg-white bg-opacity-80 backdrop-blur-md rounded-lg shadow-md w-full max-w-md text-center p-6">
+        <h1 className="font-bold text-3xl text-gray-900">
+          Weather in Your City
+        </h1>
+        <p className="mt-2 text-gray-700">
+          Detected City: {city || "Fetching..."}
+        </p>
+
         <input
-          type="text"
+          type="search"
+          id="search"
+          onChange={(e) => {
+            if (e.target.value === "") {
+              fetchIpCity();
+            }
+            setCity(e.target.value);
+          }}
+          className="mt-4 p-3 text-sm text-gray-900 border border-gray-300 rounded-lg w-full"
           placeholder="Enter city..."
-          value={city}
-          onChange={(e) => setCity(e.target.value)}
-          className="p-2 border rounded-lg w-full"
         />
+
         <button
-          onClick={fetchWeather}
-          className="mt-4 bg-blue-500 text-white px-4 py-2 rounded-lg"
+          className="mt-4 bg-blue-500 hover:bg-blue-600 transition-colors text-white px-4 py-2 rounded-lg"
+          onClick={() => fetchWeather(city)}
         >
           Get Weather
         </button>
-        {error && <p className="text-red-500 mt-2">{error}</p>}
+
         {weather && (
           <div className="mt-4">
-            <h2 className="text-xl font-bold">
+            <h2 className="text-xl font-bold text-slate-950 font-b">
               {weather.name}, {weather.sys.country}
             </h2>
-            <p className="text-lg">{weather.weather[0].description}</p>
-            <p className="text-lg">🌡 {weather.main.temp}°C</p>
+            <p className="text-lg text-slate-950 font-medium">
+              {weather.weather[0].description}
+            </p>
+            <p className="text-lg text-slate-950 font-mono">
+              🌡 {weather.main.temp}°C
+            </p>
           </div>
         )}
       </div>
