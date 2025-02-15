@@ -5,7 +5,14 @@ import { useEffect, useState } from "react";
 export default function Home() {
   const [ip, setIp] = useState("");
   const [city, setCity] = useState("");
-  const [weather, setWeather] = useState(null);
+  interface WeatherData {
+    name: string;
+    sys: { country: string };
+    weather: { description: string }[];
+    main: { temp: number };
+  }
+
+  const [weather, setWeather] = useState<WeatherData | null>(null);
 
   const fetchLocation = async () => {
     try {
@@ -30,7 +37,7 @@ export default function Home() {
     }
   };
 
-  const fetchWeather = async (cityName) => {
+  const fetchWeather = async (cityName: string) => {
     if (!cityName) return;
 
     try {
